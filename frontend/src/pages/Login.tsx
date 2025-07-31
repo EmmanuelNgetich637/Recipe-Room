@@ -10,7 +10,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/"); // Go to homepage/dashboard after login
+      navigate("/profile");
     }
   }, [user, navigate]);
 

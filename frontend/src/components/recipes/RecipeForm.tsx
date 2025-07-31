@@ -22,12 +22,10 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit }) => {
     e.preventDefault();
     onSubmit({ title, ingredients, procedure, servings });
     setSubmitted(true);
-    // Reset form
-    setTitle('');
+    setTitle(''); 
     setIngredients('');
-    setProcedure('');
-    setServings(1);
-    // Hide success message after 3 seconds
+    setProcedure(''); 
+    setServings(1); 
     setTimeout(() => setSubmitted(false), 3000);
   };
 
@@ -42,7 +40,6 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit }) => {
           className="form-control"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          placeholder="e.g. Chicken Stew"
           required
         />
       </div>
@@ -53,7 +50,6 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit }) => {
           className="form-control"
           value={ingredients}
           onChange={e => setIngredients(e.target.value)}
-          placeholder="List ingredients, separated by commas"
           rows={3}
           required
         />
@@ -65,7 +61,6 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onSubmit }) => {
           className="form-control"
           value={procedure}
           onChange={e => setProcedure(e.target.value)}
-          placeholder="Describe the cooking steps"
           rows={4}
           required
         />
