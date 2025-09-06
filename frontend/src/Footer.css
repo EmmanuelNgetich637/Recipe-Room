@@ -1,0 +1,9 @@
+.footer-link {
+  color: #f8f9fa; /* light text */
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+.footer-link:hover {
+  color: #ffc107; /* Bootstrap warning color */
+}
