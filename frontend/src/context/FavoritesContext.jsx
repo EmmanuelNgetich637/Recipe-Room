@@ -1,23 +1,40 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useEffect, useState } from "react";
 
 export const FavoritesContext = createContext();
 
 export function FavoritesProvider({ children }) {
-  const [favorites, setFavorites] = useState(() => {
-    const stored = localStorage.getItem("favorites");
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [favorites, setFavorites] = useState([]);
 
+  // Backend API URL (Vite-compatible)
+  const API_URL = import.meta.env.VITE_REACT_APP_API_URL || "http://127.0.0.1:5000/api/recipes";
+
+  // Fetch all recipes from backend on mount
   useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-  }, [favorites]);
+    const fetchFavorites = async () => {
+      try {
+        const res = await fetch(`${API_URL}/`);
+        const data = await res.json();
+
+        // Initialize local favorite state
+        const initialized = data.map((recipe) => ({
+          ...recipe,
+          liked: recipe.likes > 0,
+          comments: [],
+        }));
+
+        setFavorites(initialized);
+      } catch (err) {
+        console.error("Failed to fetch recipes:", err);
+      }
+    };
+
+    fetchFavorites();
+  }, [API_URL]);
 
   const addToFavorites = (recipe) => {
-    setFavorites((prev) =>
-      prev.find((fav) => fav.id === recipe.id)
-        ? prev
-        : [...prev, { ...recipe, likes: 0, comments: [] }]
-    );
+    if (!favorites.some((fav) => fav.id === recipe.id)) {
+      setFavorites((prev) => [...prev, { ...recipe, liked: false, comments: [] }]);
+    }
   };
 
   const removeFromFavorites = (id) => {
@@ -27,7 +44,9 @@ export function FavoritesProvider({ children }) {
   const toggleLike = (id) => {
     setFavorites((prev) =>
       prev.map((fav) =>
-        fav.id === id ? { ...fav, likes: (fav.likes || 0) + 1 } : fav
+        fav.id === id
+          ? { ...fav, liked: !fav.liked, likes: fav.liked ? fav.likes - 1 : fav.likes + 1 }
+          : fav
       )
     );
   };
@@ -35,8 +54,16 @@ export function FavoritesProvider({ children }) {
   const addComment = (id, comment) => {
     setFavorites((prev) =>
       prev.map((fav) =>
+        fav.id === id ? { ...fav, comments: [...fav.comments, comment] } : fav
+      )
+    );
+  };
+
+  const deleteComment = (id, index) => {
+    setFavorites((prev) =>
+      prev.map((fav) =>
         fav.id === id
-          ? { ...fav, comments: [...(fav.comments || []), comment] }
+          ? { ...fav, comments: fav.comments.filter((_, i) => i !== index) }
           : fav
       )
     );
@@ -44,7 +71,14 @@ export function FavoritesProvider({ children }) {
 
   return (
     <FavoritesContext.Provider
-      value={{ favorites, addToFavorites, removeFromFavorites, toggleLike, addComment }}
+      value={{
+        favorites,
+        addToFavorites,
+        removeFromFavorites,
+        toggleLike,
+        addComment,
+        deleteComment,
+      }}
     >
       {children}
     </FavoritesContext.Provider>

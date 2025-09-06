@@ -8,6 +8,7 @@ function RecipeCard({ recipe }) {
   const currentRecipe = favorites.find(fav => fav.id === recipe.id) || {};
   const liked = currentRecipe.liked || false;
   const comments = currentRecipe.comments || [];
+  const [likes, setLikes] = useState(currentRecipe.likes || recipe.likes || 0);
 
   const [newComment, setNewComment] = useState("");
 
@@ -15,6 +16,20 @@ function RecipeCard({ recipe }) {
     if (newComment.trim()) {
       addComment(recipe.id, newComment);
       setNewComment("");
+    }
+  };
+
+  const handleToggleLike = async () => {
+    try {
+      // Call backend API to update like
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/${recipe.id}/like`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+      setLikes(data.likes); // update local like count
+      toggleLike(recipe.id); // update context
+    } catch (err) {
+      console.error("Failed to update like:", err);
     }
   };
 
@@ -41,10 +56,10 @@ function RecipeCard({ recipe }) {
           </button>
 
           <button
-            onClick={() => toggleLike(recipe.id)}
+            onClick={handleToggleLike}
             className={`btn btn-sm ${liked ? "btn-pink text-white" : "btn-secondary"}`}
           >
-            {liked ? "❤️ Liked" : "🤍 Like"} {currentRecipe.likes || 0}
+            {liked ? "❤️ Liked" : "🤍 Like"} {likes}
           </button>
         </div>
 
