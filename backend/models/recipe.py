@@ -13,6 +13,7 @@ class Recipe(db.Model):
     likes = db.Column(db.Integer, default=0)
     is_favorite = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    group_id = db.Column(db.Integer, db.ForeignKey("recipe_groups.id"), nullable=True)
 
     def to_dict(self):
         return {
@@ -24,4 +25,6 @@ class Recipe(db.Model):
             "likes": self.likes,
             "is_favorite": self.is_favorite,
             "created_at": self.created_at.isoformat(),
+            "group_id": self.group_id,
+            "group_name": self.group.name if self.group else None,
         }

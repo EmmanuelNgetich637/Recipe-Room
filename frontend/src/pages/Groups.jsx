@@ -1,41 +1,92 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import GroupCard from "../components/GroupCard";
 
-function Groups() {
-  const [groups, setGroups] = useState([
-    { id: 1, name: "Italian Lovers 🍝", description: "For pasta and pizza enthusiasts", members: 120, posts: ["Best pasta recipe ever!", "Where to find fresh mozzarella?"], joined: false },
-    { id: 2, name: "Healthy Cooking 🥗", description: "Salads, smoothies, and all things clean eating", members: 85, posts: ["Green smoothie ideas?", "Meal prep hacks"], joined: false },
-    { id: 3, name: "Dessert Fans 🍰", description: "All about cakes, cookies, and sweet treats", members: 200, posts: ["Brownie recipe please!", "What’s your favorite frosting?"], joined: false },
-  ]);
+const BASE_URL = "http://127.0.0.1:5000/api";
 
+function Groups() {
+  const [groups, setGroups] = useState([]);
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [tab, setTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  const handleCreateGroup = () => {
+  // Fetch groups from backend
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/groups`);
+        if (!res.ok) throw new Error(`Error fetching groups: ${res.status}`);
+        const data = await res.json();
+        setGroups(data);
+      } catch (err) {
+        console.error("Failed to fetch groups:", err);
+      }
+    };
+    fetchGroups();
+  }, []);
+
+  const handleCreateGroup = async () => {
     if (!newGroup.name.trim()) return;
-    setGroups([...groups, { id: Date.now(), name: newGroup.name, description: newGroup.description, members: 1, posts: [], joined: true }]);
-    setNewGroup({ name: "", description: "" });
+
+    try {
+      const res = await fetch(`${BASE_URL}/groups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newGroup),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to create group:", res.status);
+        return;
+      }
+
+      const createdGroup = await res.json();
+      setGroups([...groups, { ...createdGroup, members: 1, posts: [], joined: true }]);
+      setNewGroup({ name: "", description: "" });
+    } catch (err) {
+      console.error("Error creating group:", err);
+    }
   };
 
   const handleAddPost = (groupId, post) => {
     setGroups(groups.map(g => g.id === groupId ? { ...g, posts: [...g.posts, post] } : g));
   };
 
-  const handleJoinGroup = (groupId) => {
-    setGroups(groups.map(g => g.id === groupId && !g.joined ? { ...g, members: g.members + 1, joined: true } : g));
+  const handleJoinGroup = async (groupId) => {
+    try {
+      const res = await fetch(`${BASE_URL}/groups/${groupId}/join`, { method: "POST" });
+      if (res.ok) {
+        setGroups(groups.map(g => g.id === groupId && !g.joined ? { ...g, members: g.members + 1, joined: true } : g));
+      } else {
+        console.error("Failed to join group:", res.status);
+      }
+    } catch (err) {
+      console.error("Error joining group:", err);
+    }
   };
 
-  const handleLeaveGroup = (groupId) => {
-    setGroups(groups.map(g => g.id === groupId && g.joined ? { ...g, members: g.members - 1, joined: false } : g));
-    if (selectedGroup?.id === groupId) setSelectedGroup({ ...selectedGroup, joined: false });
+  const handleLeaveGroup = async (groupId) => {
+    try {
+      const res = await fetch(`${BASE_URL}/groups/${groupId}/leave`, { method: "POST" });
+      if (res.ok) {
+        setGroups(groups.map(g => g.id === groupId && g.joined ? { ...g, members: g.members - 1, joined: false } : g));
+        if (selectedGroup?.id === groupId) setSelectedGroup({ ...selectedGroup, joined: false });
+      } else {
+        console.error("Failed to leave group:", res.status);
+      }
+    } catch (err) {
+      console.error("Error leaving group:", err);
+    }
   };
 
+  // Filtering & sorting
   let displayedGroups = tab === "all" ? groups : groups.filter(g => g.joined);
-  if (searchTerm.trim()) displayedGroups = displayedGroups.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  if (searchTerm.trim()) {
+    displayedGroups = displayedGroups.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }
   displayedGroups = [...displayedGroups].sort((a, b) => sortOrder === "asc" ? a.members - b.members : b.members - a.members);
+
   const recommendedGroups = groups.filter(g => !g.joined).sort((a, b) => b.members - a.members).slice(0, 2);
 
   return (
